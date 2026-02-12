@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Robot Control</title>
+
+<style>
+html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: linear-gradient(135deg, #141E30, #243B55);
+    color: white;
+}
+
+/* Main wrapper: evenly space sections */
+.wrapper {
+    display: flex;
+    justify-content: space-around;
+    align-items: flex-start;
+    padding: 40px;
+    gap: 40px;
+    flex-wrap: wrap;
+}
+
+/* Section panels */
+.joystick-section, .head-section, .voice-section {
+    background: rgba(255,255,255,0.05);
+    backdrop-filter: blur(15px);
+    border-radius: 15px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 280px;
+    box-shadow: 0 0 15px rgba(0,0,0,0.4);
+    transition: box-shadow 0.3s;
+}
+
+.joystick-section:hover,
+.head-section:hover,
+.voice-section:hover {
+    box-shadow: 0 0 20px rgba(0,255,255,0.3);
+}
+/* Keyframes for soft pulsing */
+@keyframes pulse {
+    0% { box-shadow: 0 0 8px rgba(0,255,255,0.15); }
+    50% { box-shadow: 0 0 12px rgba(0,255,255,0.22); }
+    100% { box-shadow: 0 0 8px rgba(0,255,255,0.15); }
+}
+
+@keyframes pulse-text {
+    0% { text-shadow: 0 0 2px #00FFFF; }
+    50% { text-shadow: 0 0 4px #00FFFF; }
+    100% { text-shadow: 0 0 2px #00FFFF; }
+}
+
+/* Apply to joystick stick */
+.joystick-stick {
+    width: 40%;
+    height: 40%;
+    background: linear-gradient(145deg, #ffffff, #cccccc);
+    border-radius: 50%;
+    position: absolute;
+    cursor: grab;
+}
+
+/* Apply to sliders */
+input[type="range"] {
+    width: 100%;
+    cursor: pointer;
+    accent-color: #00FFFF;
+    border-radius: 5px;
+}
+
+/* Apply to buttons */
+.control-button {
+    padding: 12px 20px;
+    font-size: 16px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    background-color: rgba(0,255,255,0.08);
+    color: #00FFFF;
+    text-shadow: 0 0 2px #00FFFF;
+    width: 100%;
+}
+
+.title {
+    font-size: 28px;
+    font-weight: 600;
+    margin-bottom: 20px;
+    letter-spacing: 0.5px;
+    text-align: center;
+    color: #00FFFF;
+    animation: pulse-text 3s infinite ease-in-out;
+}
+/* Joystick */
+.joystick-base {
+    width: 25vw;
+    height: 25vw;
+    max-width: 300px;
+    max-height: 300px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 50%;
+    position: relative;
+    backdrop-filter: blur(15px);
+    box-shadow: 0 0 15px rgba(0,255,255,0.2);
+    transition: box-shadow 0.3s;
+}
+
+.joystick-base:hover {
+    box-shadow: 0 0 25px rgba(0,255,255,0.3);
+}
+
+/* Sliders */
+.slider-group {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 20px;
+    width: 100%;
+}
+
+.slider-label {
+    margin-bottom: 8px;
+    font-size: 16px;
+    color: #00FFFF;
+    text-shadow: 0 0 2px #00FFFF;
+}
+
+/* Buttons */
+.button-group {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-top: 10px;
+    width: 100%;
+    align-items: center;
+}
+
+.control-button:hover {
+    background-color: rgba(0,255,255,0.18);
+    box-shadow: 0 0 12px rgba(0,255,255,0.25);
+}
+
+.control-button:active {
+    background-color: rgba(0,255,255,0.28);
+    transform: scale(0.97);
+    box-shadow: 0 0 15px rgba(0,255,255,0.3);
+}
+
+/* Responsive text and spacing */
+@media (max-width: 1000px) {
+    .wrapper {
+        flex-direction: column;
+        align-items: center;
+    }
+    .joystick-section, .head-section, .voice-section {
+        width: 80%;
+        max-width: 400px;
+        margin-bottom: 30px;
+    }
+}
+</style>
+
+</head>
+
+<body>
+
+<div class="wrapper">
+
+    <!-- Drive Control -->
+    <div class="joystick-section">
+        <div class="title">Drive control</div>
+        <div class="joystick-base" id="base">
+            <div class="joystick-stick" id="stick"></div>
+        </div>
+    </div>
+
+    <!-- Head Control -->
+    <div class="head-section">
+        <div class="title">Head control</div>
+
+        <div class="slider-group">
+            <div class="slider-label">Tilt</div>
+            <input type="range" id="tilt" min="-1" max="1" step="0.01" value="0">
+        </div>
+
+        <div class="slider-group">
+            <div class="slider-label">Pan</div>
+            <input type="range" id="pan" min="-1" max="1" step="0.01" value="0">
+        </div>
+    </div>
+
+    <!-- Voice Control -->
+    <div class="voice-section">
+        <div class="title">Voice control</div>
+
+        <div class="button-group">
+            <button class="control-button" data-button="1">Button 1</button>
+            <button class="control-button" data-button="2">Button 2</button>
+            <button class="control-button" data-button="3">Button 3</button>
+            <button class="control-button" data-button="4">Button 4</button>
+        </div>
+    </div>
+
+</div>
+
+<script>
+/* -------------------- JOYSTICK -------------------- */
+const base = document.getElementById("base");
+const stick = document.getElementById("stick");
+
+let radius, stickRadius;
+let dragging = false;
+let currentX = 0;
+let currentY = 0;
+
+function centerStick() {
+    radius = base.clientWidth / 2;
+    stickRadius = stick.clientWidth / 2;
+    stick.style.left = (radius - stickRadius) + "px";
+    stick.style.top = (radius - stickRadius) + "px";
+}
+
+window.onload = centerStick;
+window.onresize = centerStick;
+
+function updatePosition(clientX, clientY) {
+    const rect = base.getBoundingClientRect();
+    let x = clientX - rect.left - radius;
+    let y = clientY - rect.top - radius;
+
+    const maxDistance = radius - stickRadius;
+    const distance = Math.sqrt(x*x + y*y);
+
+    if (distance > maxDistance) {
+        const angle = Math.atan2(y, x);
+        x = Math.cos(angle) * maxDistance;
+        y = Math.sin(angle) * maxDistance;
+    }
+
+    stick.style.left = (x + radius - stickRadius) + "px";
+    stick.style.top = (y + radius - stickRadius) + "px";
+
+    currentX = parseFloat((x / maxDistance).toFixed(2));
+    currentY = parseFloat((-y / maxDistance).toFixed(2));
+}
+
+stick.addEventListener("mousedown", () => dragging = true);
+
+document.addEventListener("mouseup", () => {
+    dragging = false;
+    resetStick();
+});
+
+document.addEventListener("mousemove", (e) => {
+    if (dragging) updatePosition(e.clientX, e.clientY);
+});
+
+function resetStick() {
+    centerStick();
+    currentX = 0;
+    currentY = 0;
+}
+
+
+/* -------------------- HEAD CONTROL -------------------- */
+
+const tiltSlider = document.getElementById("tilt");
+const panSlider = document.getElementById("pan");
+
+let lastTiltSent = 0;
+let lastPanSent = 0;
+
+
+/* -------------------- 500ms CONTROL LOOP -------------------- */
+
+let lastXSent = 0;
+let lastYSent = 0;
+const DEADZONE = 0.02;
+
+setInterval(() => {
+
+    /* --- DRIVE --- */
+    const xToSend = Math.abs(currentX) < DEADZONE ? 0 : currentX;
+    const yToSend = Math.abs(currentY) < DEADZONE ? 0 : currentY;
+
+    if (xToSend !== lastXSent || yToSend !== lastYSent) {
+        fetch("/joystick", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({ x: xToSend, y: yToSend })
+        }).catch(() => {});
+
+        lastXSent = xToSend;
+        lastYSent = yToSend;
+    }
+
+    /* --- HEAD --- */
+    const currentTilt = parseFloat(tiltSlider.value);
+    const currentPan = parseFloat(panSlider.value);
+
+    if (currentTilt !== lastTiltSent || currentPan !== lastPanSent) {
+        fetch("/head", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({
+                tilt: currentTilt,
+                pan: currentPan
+            })
+        }).catch(() => {});
+
+        lastTiltSent = currentTilt;
+        lastPanSent = currentPan;
+    }
+
+}, 200);//500ms
+
+
+document.querySelectorAll(".control-button").forEach(button => {
+    button.addEventListener("mousedown", () => {
+        const btnNum = button.dataset.button;
+        fetch("/buttons", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ button: btnNum, pressed: true })
+        }).catch(() => {});
+    });
+
+    button.addEventListener("mouseup", () => {
+        const btnNum = button.dataset.button;
+        fetch("/buttons", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ button: btnNum, pressed: false })
+        }).catch(() => {});
+    });
+});
+
+
+</script>
+
+</body>
+</html>
