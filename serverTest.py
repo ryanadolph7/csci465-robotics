@@ -6,7 +6,7 @@ app = Flask(__name__)
 import os
 
 def tts(text, pitch):
-        os.system(f"espeak-ng -v EN-gb-scotland -a 10 -p {pitch} -s 125 '{text}'")
+    os.system(f"espeak-ng -v EN-gb-scotland -a 10 -p {pitch} -s 125 '{text}'")
 
 servo = Controller()
 @app.route("/")
@@ -53,7 +53,13 @@ def buttons():
     pressed = data.get("pressed")
     if(pressed == True):
         if(button == '1'):
-	    tts("Hello", "85")
+            tts("Hello good chap", "85")
+        if(button == '2'):
+            tts("Goodbye old pal", "85")
+        if(button == '3'):
+            tts("RAGHHHHHHH", "5")
+        if(button == '4'):
+            tts("I am Lying", "60")
     return {"status": "ok"}
 
 app.run(host="0.0.0.0", port=5000, debug=False)
