@@ -1,9 +1,9 @@
-import time
-
 from flask import Flask, render_template, request, jsonify
 from maestro import Controller
 app = Flask(__name__)
 import os
+import math
+import motor
 
 def tts(text, pitch):
     os.system(f"espeak-ng -v EN-gb-scotland -a 10 -p {pitch} -s 125 '{text}'")
@@ -11,22 +11,26 @@ def tts(text, pitch):
 servo = Controller()
 @app.route("/")
 def index():
+    print("Flask server was initially connected to or reloaded")
+    #ensures that if the webpage is reloaded, all servos are reset
+    motor.fullReset()
     return render_template("index.html")
 
 @app.route("/joystick", methods=["POST"])
 def joystick():
+    #data is sent
     data = request.json
-    #time.sleep(2)
     x = data.get("x")
     y = data.get("y")
-
+    #handles bad joystick inputs (data is validated)
+    if(math.fabs(x) > 1 or math.fabs(y) > 1):
+        return jsonify({"status": "bad"})
     print(f"Joystick X: {x}, Y: {y}")
     yAxis = int(1200*float(y))
     xAxis = int(1000 * float(x))
-    servo.setAccel(1, 5)
-    servo.setAccel(2,5)
-    servo.setTarget(1, 6000-yAxis-xAxis)
-    servo.setTarget(2, 6000+yAxis-xAxis)
+    #data is interpreted and translated into servo control
+    motor.leftWheel(6000-yAxis-xAxis)
+    motor.rightWheel(6000+yAxis-xAxis)
     return jsonify({"status": "ok"})
 
 @app.route("/head", methods=["POST"])
@@ -34,15 +38,11 @@ def head_control():
     data = request.json
     tilt = data.get("tilt")
     pan = data.get("pan")
-    
     print(f"Head Tilt: {tilt}, Pan: {pan}")
     panAmount = int(6000 + (1500 * float(pan)))
     tiltAmount = int(6000 + (1500 * float(tilt)))
-    servo.setAccel(3, 4)
-    servo.setTarget(3, panAmount)
-    servo.setAccel(4, 4)
-    servo.setTarget(4, tiltAmount)
-
+    motor.headPan(panAmount)
+    motor.headTilt(tiltAmount)
     return {"status": "ok"}
 
 
@@ -62,4 +62,6 @@ def buttons():
             tts("I am Lying", "60")
     return {"status": "ok"}
 
+#Resets all motors when the flask server is started/restarted
+motor.fullReset()
 app.run(host="0.0.0.0", port=5000, debug=False)

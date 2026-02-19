@@ -14,7 +14,6 @@ html, body {
     color: white;
 }
 
-/* Main wrapper: evenly space sections */
 .wrapper {
     display: flex;
     justify-content: space-around;
@@ -24,7 +23,6 @@ html, body {
     flex-wrap: wrap;
 }
 
-/* Section panels */
 .joystick-section, .head-section, .voice-section {
     background: rgba(255,255,255,0.05);
     backdrop-filter: blur(15px);
@@ -43,20 +41,25 @@ html, body {
 .voice-section:hover {
     box-shadow: 0 0 20px rgba(0,255,255,0.3);
 }
-/* Keyframes for soft pulsing */
-@keyframes pulse {
-    0% { box-shadow: 0 0 8px rgba(0,255,255,0.15); }
-    50% { box-shadow: 0 0 12px rgba(0,255,255,0.22); }
-    100% { box-shadow: 0 0 8px rgba(0,255,255,0.15); }
+
+.title {
+    font-size: 28px;
+    font-weight: 600;
+    margin-bottom: 20px;
+    text-align: center;
+    color: #00FFFF;
 }
 
-@keyframes pulse-text {
-    0% { text-shadow: 0 0 2px #00FFFF; }
-    50% { text-shadow: 0 0 4px #00FFFF; }
-    100% { text-shadow: 0 0 2px #00FFFF; }
+.joystick-base {
+    width: 25vw;
+    height: 25vw;
+    max-width: 300px;
+    max-height: 300px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 50%;
+    position: relative;
 }
 
-/* Apply to joystick stick */
 .joystick-stick {
     width: 40%;
     height: 40%;
@@ -66,55 +69,6 @@ html, body {
     cursor: grab;
 }
 
-/* Apply to sliders */
-input[type="range"] {
-    width: 100%;
-    cursor: pointer;
-    accent-color: #00FFFF;
-    border-radius: 5px;
-}
-
-/* Apply to buttons */
-.control-button {
-    padding: 12px 20px;
-    font-size: 16px;
-    border-radius: 8px;
-    border: none;
-    cursor: pointer;
-    background-color: rgba(0,255,255,0.08);
-    color: #00FFFF;
-    text-shadow: 0 0 2px #00FFFF;
-    width: 100%;
-}
-
-.title {
-    font-size: 28px;
-    font-weight: 600;
-    margin-bottom: 20px;
-    letter-spacing: 0.5px;
-    text-align: center;
-    color: #00FFFF;
-    animation: pulse-text 3s infinite ease-in-out;
-}
-/* Joystick */
-.joystick-base {
-    width: 25vw;
-    height: 25vw;
-    max-width: 300px;
-    max-height: 300px;
-    background: rgba(255,255,255,0.08);
-    border-radius: 50%;
-    position: relative;
-    backdrop-filter: blur(15px);
-    box-shadow: 0 0 15px rgba(0,255,255,0.2);
-    transition: box-shadow 0.3s;
-}
-
-.joystick-base:hover {
-    box-shadow: 0 0 25px rgba(0,255,255,0.3);
-}
-
-/* Sliders */
 .slider-group {
     display: flex;
     flex-direction: column;
@@ -126,51 +80,35 @@ input[type="range"] {
     margin-bottom: 8px;
     font-size: 16px;
     color: #00FFFF;
-    text-shadow: 0 0 2px #00FFFF;
 }
 
-/* Buttons */
+input[type="range"] {
+    width: 100%;
+}
+
 .button-group {
     display: flex;
     flex-direction: column;
     gap: 15px;
-    margin-top: 10px;
     width: 100%;
-    align-items: center;
 }
 
-.control-button:hover {
-    background-color: rgba(0,255,255,0.18);
-    box-shadow: 0 0 12px rgba(0,255,255,0.25);
-}
-
-.control-button:active {
-    background-color: rgba(0,255,255,0.28);
-    transform: scale(0.97);
-    box-shadow: 0 0 15px rgba(0,255,255,0.3);
-}
-
-/* Responsive text and spacing */
-@media (max-width: 1000px) {
-    .wrapper {
-        flex-direction: column;
-        align-items: center;
-    }
-    .joystick-section, .head-section, .voice-section {
-        width: 80%;
-        max-width: 400px;
-        margin-bottom: 30px;
-    }
+.control-button {
+    padding: 12px 20px;
+    font-size: 16px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    background-color: rgba(0,255,255,0.08);
+    color: #00FFFF;
 }
 </style>
-
 </head>
 
 <body>
 
 <div class="wrapper">
 
-    <!-- Drive Control -->
     <div class="joystick-section">
         <div class="title">Drive control</div>
         <div class="joystick-base" id="base">
@@ -178,7 +116,6 @@ input[type="range"] {
         </div>
     </div>
 
-    <!-- Head Control -->
     <div class="head-section">
         <div class="title">Head control</div>
 
@@ -193,7 +130,6 @@ input[type="range"] {
         </div>
     </div>
 
-    <!-- Voice Control -->
     <div class="voice-section">
         <div class="title">Voice control</div>
 
@@ -208,7 +144,9 @@ input[type="range"] {
 </div>
 
 <script>
+
 /* -------------------- JOYSTICK -------------------- */
+
 const base = document.getElementById("base");
 const stick = document.getElementById("stick");
 
@@ -256,15 +194,50 @@ document.addEventListener("mouseup", () => {
 });
 
 document.addEventListener("mousemove", (e) => {
-    if (dragging) updatePosition(e.clientX, e.clientY);
+    if (!dragging) return;
+    updatePosition(e.clientX, e.clientY);
+    sendDriveIfNeeded();
 });
 
 function resetStick() {
     centerStick();
     currentX = 0;
     currentY = 0;
+    sendDriveIfNeeded(); // send zero immediately
 }
 
+/* -------------------- DRIVE SEND (THROTTLED) -------------------- */
+
+let lastXSent = 0;
+let lastYSent = 0;
+let lastDriveSendTime = 0;
+
+const DEADZONE = 0.02;
+const DRIVE_SEND_INTERVAL = 80; // ~12.5fps
+
+function sendDriveIfNeeded() {
+
+    const now = Date.now();
+
+    const xToSend = Math.abs(currentX) < DEADZONE ? 0 : currentX;
+    const yToSend = Math.abs(currentY) < DEADZONE ? 0 : currentY;
+
+    const enoughTimePassed = now - lastDriveSendTime > DRIVE_SEND_INTERVAL;
+
+    if (enoughTimePassed &&
+        (xToSend !== lastXSent || yToSend !== lastYSent)) {
+
+        fetch("/joystick", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({ x: xToSend, y: yToSend })
+        }).catch(() => {});
+
+        lastXSent = xToSend;
+        lastYSent = yToSend;
+        lastDriveSendTime = now;
+    }
+}
 
 /* -------------------- HEAD CONTROL -------------------- */
 
@@ -274,35 +247,13 @@ const panSlider = document.getElementById("pan");
 let lastTiltSent = 0;
 let lastPanSent = 0;
 
-
-/* -------------------- 500ms CONTROL LOOP -------------------- */
-
-let lastXSent = 0;
-let lastYSent = 0;
-const DEADZONE = 0.02;
-
 setInterval(() => {
 
-    /* --- DRIVE --- */
-    const xToSend = Math.abs(currentX) < DEADZONE ? 0 : currentX;
-    const yToSend = Math.abs(currentY) < DEADZONE ? 0 : currentY;
-
-    if (xToSend !== lastXSent || yToSend !== lastYSent) {
-        fetch("/joystick", {
-            method: "POST",
-            headers: {"Content-Type": "application/json"},
-            body: JSON.stringify({ x: xToSend, y: yToSend })
-        }).catch(() => {});
-
-        lastXSent = xToSend;
-        lastYSent = yToSend;
-    }
-
-    /* --- HEAD --- */
     const currentTilt = parseFloat(tiltSlider.value);
     const currentPan = parseFloat(panSlider.value);
 
     if (currentTilt !== lastTiltSent || currentPan !== lastPanSent) {
+
         fetch("/head", {
             method: "POST",
             headers: {"Content-Type": "application/json"},
@@ -316,10 +267,12 @@ setInterval(() => {
         lastPanSent = currentPan;
     }
 
-}, 200);//500ms
+}, 100);
 
+/* -------------------- BUTTONS -------------------- */
 
 document.querySelectorAll(".control-button").forEach(button => {
+
     button.addEventListener("mousedown", () => {
         const btnNum = button.dataset.button;
         fetch("/buttons", {
@@ -337,8 +290,8 @@ document.querySelectorAll(".control-button").forEach(button => {
             body: JSON.stringify({ button: btnNum, pressed: false })
         }).catch(() => {});
     });
-});
 
+});
 
 </script>
 
