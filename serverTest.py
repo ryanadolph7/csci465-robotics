@@ -80,21 +80,25 @@ def text_input():
     global d
     global c
     global depth
-    global listToChooseFrom
+    global scope
     global variables
     print("State:", state)
     if state == 'boot':
         d, c = dialogueParser.parseText('test.txt')
         state = 'idle'
         depth = 0
-        listToChooseFrom = []
+        scope = []
     data = request.json
     text = data.get("text", "")
     print(f"User text: {text}")
-    returnedText, returnedAction, depth, listToChooseFrom, variables = dialogueParser.interpretText(text, d,c ,depth, listToChooseFrom, variables)
-    print(returnedText)
+    returnedText, returnedAction, depth, scope, variables = dialogueParser.interpretText(text, d,c ,depth, scope, variables)
+    print("returned text:" , returnedText)
+    print("action:", returnedAction)
+    print("state:", state)
     tts(returnedText, 10)
     if(returnedText == "OK. Stopping now."):
+        state = 'idle'
+        scope = []
         motor.fullReset()
     if(returnedAction == 'None'):
         print("No action")
