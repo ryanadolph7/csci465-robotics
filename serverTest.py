@@ -111,22 +111,26 @@ def text_input():
     print("action:", returnedAction)
     print("state:", state)
     tts(returnedText, 10)
-    if(returnedText == "OK. Stopping now."):
-        state = 'idle'
+    if(depth >= 5):
+        tts("Error: too deep. Resetting.")
         scope = []
-        motor.fullReset()
-    if(returnedAction == 'None'):
-        print("No action")
-    elif(returnedAction == 'head_yes'):
-        action_functions.head_yes()
-    elif (returnedAction == 'head_no'):
-        action_functions.head_no()
-    elif (returnedAction == 'arm_raise'):
-        action_functions.arm_raise()
-    elif(returnedAction == 'dance90'):
-        action_functions.dance90()
     else:
-        print("Error: unknown action", returnedAction)
+        if(returnedText == "OK. Stopping now."):
+            state = 'idle'
+            scope = []
+            motor.fullReset()
+        if(returnedAction == 'None'):
+            print("No action")
+        elif(returnedAction == 'head_yes'):
+            action_functions.head_yes()
+        elif (returnedAction == 'head_no'):
+            action_functions.head_no()
+        elif (returnedAction == 'arm_raise'):
+            action_functions.arm_raise()
+        elif(returnedAction == 'dance90'):
+            action_functions.dance90()
+        else:
+            print("Error: unknown action", returnedAction)
     return jsonify({"response": text})
 
 #Resets all motors when the flask server is started/restarted
