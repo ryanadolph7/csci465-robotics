@@ -187,7 +187,7 @@ def interpretText(userInput, d, c, depth, listToChooseFrom, variables):
                     actionReturned = True
 
                 if (found):
-                    return returnedText.strip(), returnedAction.strip(), returnedDepth, listToChooseFrom
+                    return returnedText.strip(), returnedAction.strip(), returnedDepth, listToChooseFrom, variables
 
         if(not found):
             returnedDepth = 0

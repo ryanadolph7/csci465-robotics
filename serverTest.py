@@ -1,3 +1,6 @@
+import random
+import sys
+
 from flask import Flask, render_template, request, jsonify
 from maestro import Controller
 app = Flask(__name__)
@@ -13,6 +16,9 @@ def tts(text, pitch):
 #servo = Controller()
 @app.route("/")
 def index():
+    #allows for set seeding
+    if(len(sys.argv)>1):
+        random.seed(sys.argv[1])
     print("Flask server was initially connected to or reloaded")
     global d
     global c
