@@ -1,4 +1,5 @@
 import random
+import string
 import sys
 
 from flask import Flask, render_template, request, jsonify
@@ -9,6 +10,12 @@ import math
 import dialogueParser
 import action_functions
 import motor
+
+def remove_punctuation_translate(text):
+    # Create a translation table that maps every punctuation character to None (deletion)
+    translator = str.maketrans('', '', string.punctuation)
+    return text.translate(translator)
+
 
 def tts(text, pitch):
     os.system(f"espeak-ng -v EN-gb-scotland -a 20 -p {pitch} -s 50 '{text}'")
@@ -96,7 +103,9 @@ def text_input():
     data = request.json
     text = data.get("text", "")
     print(f"User text: {text}")
-    text = text.strip().toLower()
+    #cleans up text by turning it to lowercase and removes punctuation
+    text = text.strip().lower()
+    text = remove_punctuation_translate(text)
     returnedText, returnedAction, depth, scope, variables = dialogueParser.interpretText(text, d,c ,depth, scope, variables)
     print("returned text:" , returnedText)
     print("action:", returnedAction)
