@@ -3,15 +3,27 @@ from maestro import Controller
 app = Flask(__name__)
 import os
 import math
+import dialogueParser
+import action_functions
 import motor
 
 def tts(text, pitch):
     os.system(f"espeak-ng -v EN-gb-scotland -a 10 -p {pitch} -s 125 '{text}'")
 
-servo = Controller()
+#servo = Controller()
 @app.route("/")
 def index():
     print("Flask server was initially connected to or reloaded")
+    global d
+    global c
+    global state
+    global variables
+    variables = {"name": "i don't know", "age": "i don't know", "color": "i don't know"}
+    state = 'boot'
+
+
+
+
     #ensures that if the webpage is reloaded, all servos are reset
     motor.fullReset()
     return render_template("index.html")
@@ -61,6 +73,42 @@ def buttons():
         if(button == '4'):
             tts("I am Lying", "60")
     return {"status": "ok"}
+
+@app.route("/text", methods=["POST"])
+def text_input():
+    global state
+    global d
+    global c
+    global depth
+    global listToChooseFrom
+    global variables
+    print("State:", state)
+    if state == 'boot':
+        d, c = dialogueParser.parseText('test.txt')
+        state = 'idle'
+        depth = 0
+        listToChooseFrom = []
+    data = request.json
+    text = data.get("text", "")
+    print(f"User text: {text}")
+    returnedText, returnedAction, depth, listToChooseFrom, variables = dialogueParser.interpretText(text, d,c ,depth, listToChooseFrom, variables)
+    print(returnedText)
+    tts(returnedText, 10)
+    if(returnedText == "OK. Stopping now."):
+        motor.fullReset()
+    if(returnedAction == 'None'):
+        print("No action")
+    elif(returnedAction == 'head_yes'):
+        action_functions.head_yes()
+    elif (returnedAction == 'head_no'):
+        action_functions.head_no()
+    elif (returnedAction == 'arm_raise'):
+        action_functions.arm_raise()
+    elif(returnedAction == 'dance90'):
+        action_functions.dance90()
+    else:
+        print("Error: unknown action", returnedAction)
+    return jsonify({"response": text})
 
 #Resets all motors when the flask server is started/restarted
 motor.fullReset()

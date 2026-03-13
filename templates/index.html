@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -102,50 +103,96 @@ input[type="range"] {
     background-color: rgba(0,255,255,0.08);
     color: #00FFFF;
 }
+
+/* Text command input */
+
+.text-input-group {
+    margin-top: 20px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.text-input {
+    padding: 10px;
+    border-radius: 8px;
+    border: none;
+    outline: none;
+    background: rgba(255,255,255,0.08);
+    color: white;
+}
+
+.send-button {
+    padding: 10px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    background-color: rgba(0,255,255,0.08);
+    color: #00FFFF;
+}
+
+.response-text {
+    font-size: 14px;
+    color: #AAAAAA;
+}
 </style>
+
 </head>
 
 <body>
 
 <div class="wrapper">
 
-    <div class="joystick-section">
-        <div class="title">Drive control</div>
-        <div class="joystick-base" id="base">
-            <div class="joystick-stick" id="stick"></div>
-        </div>
-    </div>
+<div class="joystick-section">
+<div class="title">Drive control</div>
 
-    <div class="head-section">
-        <div class="title">Head control</div>
+<div class="joystick-base" id="base">
+<div class="joystick-stick" id="stick"></div>
+</div>
 
-        <div class="slider-group">
-            <div class="slider-label">Tilt</div>
-            <input type="range" id="tilt" min="-1" max="1" step="0.01" value="0">
-        </div>
+</div>
 
-        <div class="slider-group">
-            <div class="slider-label">Pan</div>
-            <input type="range" id="pan" min="-1" max="1" step="0.01" value="0">
-        </div>
-    </div>
+<div class="head-section">
 
-    <div class="voice-section">
-        <div class="title">Voice control</div>
+<div class="title">Head control</div>
 
-        <div class="button-group">
-            <button class="control-button" data-button="1">Button 1</button>
-            <button class="control-button" data-button="2">Button 2</button>
-            <button class="control-button" data-button="3">Button 3</button>
-            <button class="control-button" data-button="4">Button 4</button>
-        </div>
-    </div>
+<div class="slider-group">
+<div class="slider-label">Tilt</div>
+<input type="range" id="tilt" min="-1" max="1" step="0.01" value="0">
+</div>
+
+<div class="slider-group">
+<div class="slider-label">Pan</div>
+<input type="range" id="pan" min="-1" max="1" step="0.01" value="0">
+</div>
+
+</div>
+
+<div class="voice-section">
+
+<div class="title">Voice control</div>
+
+<div class="button-group">
+<button class="control-button" data-button="1">Button 1</button>
+<button class="control-button" data-button="2">Button 2</button>
+<button class="control-button" data-button="3">Button 3</button>
+<button class="control-button" data-button="4">Button 4</button>
+</div>
+
+<div class="text-input-group">
+<input class="text-input" type="text" id="userText" placeholder="Type command for robot...">
+<button class="send-button" onclick="sendText()">Send</button>
+<div class="response-text">Robot heard: <span id="serverResponse"></span></div>
+</div>
+
+</div>
 
 </div>
 
 <script>
 
-/* -------------------- JOYSTICK -------------------- */
+/* ---------------- JOYSTICK ---------------- */
 
 const base = document.getElementById("base");
 const stick = document.getElementById("stick");
@@ -156,90 +203,107 @@ let currentX = 0;
 let currentY = 0;
 
 function centerStick() {
-    radius = base.clientWidth / 2;
-    stickRadius = stick.clientWidth / 2;
-    stick.style.left = (radius - stickRadius) + "px";
-    stick.style.top = (radius - stickRadius) + "px";
+
+radius = base.clientWidth / 2;
+stickRadius = stick.clientWidth / 2;
+
+stick.style.left = (radius - stickRadius) + "px";
+stick.style.top = (radius - stickRadius) + "px";
+
 }
 
 window.onload = centerStick;
 window.onresize = centerStick;
 
 function updatePosition(clientX, clientY) {
-    const rect = base.getBoundingClientRect();
-    let x = clientX - rect.left - radius;
-    let y = clientY - rect.top - radius;
 
-    const maxDistance = radius - stickRadius;
-    const distance = Math.sqrt(x*x + y*y);
+const rect = base.getBoundingClientRect();
 
-    if (distance > maxDistance) {
-        const angle = Math.atan2(y, x);
-        x = Math.cos(angle) * maxDistance;
-        y = Math.sin(angle) * maxDistance;
-    }
+let x = clientX - rect.left - radius;
+let y = clientY - rect.top - radius;
 
-    stick.style.left = (x + radius - stickRadius) + "px";
-    stick.style.top = (y + radius - stickRadius) + "px";
+const maxDistance = radius - stickRadius;
+const distance = Math.sqrt(x*x + y*y);
 
-    currentX = parseFloat((x / maxDistance).toFixed(2));
-    currentY = parseFloat((-y / maxDistance).toFixed(2));
+if (distance > maxDistance) {
+
+const angle = Math.atan2(y, x);
+x = Math.cos(angle) * maxDistance;
+y = Math.sin(angle) * maxDistance;
+
+}
+
+stick.style.left = (x + radius - stickRadius) + "px";
+stick.style.top = (y + radius - stickRadius) + "px";
+
+currentX = parseFloat((x / maxDistance).toFixed(2));
+currentY = parseFloat((-y / maxDistance).toFixed(2));
+
 }
 
 stick.addEventListener("mousedown", () => dragging = true);
 
 document.addEventListener("mouseup", () => {
-    dragging = false;
-    resetStick();
+
+dragging = false;
+resetStick();
+
 });
 
 document.addEventListener("mousemove", (e) => {
-    if (!dragging) return;
-    updatePosition(e.clientX, e.clientY);
-    sendDriveIfNeeded();
+
+if (!dragging) return;
+
+updatePosition(e.clientX, e.clientY);
+sendDriveIfNeeded();
+
 });
 
 function resetStick() {
-    centerStick();
-    currentX = 0;
-    currentY = 0;
-    sendDriveIfNeeded(); // send zero immediately
+
+centerStick();
+currentX = 0;
+currentY = 0;
+sendDriveIfNeeded();
+
 }
 
-/* -------------------- DRIVE SEND (THROTTLED) -------------------- */
+/* -------------- DRIVE SEND -------------- */
 
 let lastXSent = 0;
 let lastYSent = 0;
 let lastDriveSendTime = 0;
 
 const DEADZONE = 0.02;
-const DRIVE_SEND_INTERVAL = 80; // ~12.5fps
+const DRIVE_SEND_INTERVAL = 80;
 
 function sendDriveIfNeeded() {
 
-    const now = Date.now();
+const now = Date.now();
 
-    const xToSend = Math.abs(currentX) < DEADZONE ? 0 : currentX;
-    const yToSend = Math.abs(currentY) < DEADZONE ? 0 : currentY;
+const xToSend = Math.abs(currentX) < DEADZONE ? 0 : currentX;
+const yToSend = Math.abs(currentY) < DEADZONE ? 0 : currentY;
 
-    const enoughTimePassed = now - lastDriveSendTime > DRIVE_SEND_INTERVAL;
+const enoughTimePassed = now - lastDriveSendTime > DRIVE_SEND_INTERVAL;
 
-    if (enoughTimePassed &&
-        (xToSend !== lastXSent || yToSend !== lastYSent)) {
+if (enoughTimePassed &&
+(xToSend !== lastXSent || yToSend !== lastYSent)) {
 
-        fetch("/joystick", {
-            method: "POST",
-            headers: {"Content-Type": "application/json"},
-            body: JSON.stringify({ x: xToSend, y: yToSend })
-        }).catch(() => {});
+fetch("/joystick", {
+method: "POST",
+headers: {"Content-Type": "application/json"},
+body: JSON.stringify({ x: xToSend, y: yToSend })
+}).catch(() => {});
 
-        lastXSent = xToSend;
-        lastYSent = yToSend;
-        lastDriveSendTime = now;
-    }
+lastXSent = xToSend;
+lastYSent = yToSend;
+lastDriveSendTime = now;
+
 }
 
-/* -------------------- HEAD CONTROL -------------------- */
+}
+
+/* -------------- HEAD CONTROL -------------- */
 
 const tiltSlider = document.getElementById("tilt");
 const panSlider = document.getElementById("pan");
@@ -249,49 +313,91 @@ let lastPanSent = 0;
 
 setInterval(() => {
 
-    const currentTilt = parseFloat(tiltSlider.value);
-    const currentPan = parseFloat(panSlider.value);
+const currentTilt = parseFloat(tiltSlider.value);
+const currentPan = parseFloat(panSlider.value);
 
-    if (currentTilt !== lastTiltSent || currentPan !== lastPanSent) {
+if (currentTilt !== lastTiltSent || currentPan !== lastPanSent) {
 
-        fetch("/head", {
-            method: "POST",
-            headers: {"Content-Type": "application/json"},
-            body: JSON.stringify({
-                tilt: currentTilt,
-                pan: currentPan
-            })
-        }).catch(() => {});
+fetch("/head", {
+method: "POST",
+headers: {"Content-Type": "application/json"},
+body: JSON.stringify({
+tilt: currentTilt,
+pan: currentPan
+})
+}).catch(() => {});
 
-        lastTiltSent = currentTilt;
-        lastPanSent = currentPan;
-    }
+lastTiltSent = currentTilt;
+lastPanSent = currentPan;
+
+}
 
 }, 100);
 
-/* -------------------- BUTTONS -------------------- */
+/* -------------- BUTTONS -------------- */
 
 document.querySelectorAll(".control-button").forEach(button => {
 
-    button.addEventListener("mousedown", () => {
-        const btnNum = button.dataset.button;
-        fetch("/buttons", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ button: btnNum, pressed: true })
-        }).catch(() => {});
-    });
+button.addEventListener("mousedown", () => {
 
-    button.addEventListener("mouseup", () => {
-        const btnNum = button.dataset.button;
-        fetch("/buttons", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ button: btnNum, pressed: false })
-        }).catch(() => {});
-    });
+const btnNum = button.dataset.button;
+
+fetch("/buttons", {
+method: "POST",
+headers: {"Content-Type": "application/json"},
+body: JSON.stringify({ button: btnNum, pressed: true })
+}).catch(() => {});
 
 });
+
+button.addEventListener("mouseup", () => {
+
+const btnNum = button.dataset.button;
+
+fetch("/buttons", {
+method: "POST",
+headers: {"Content-Type": "application/json"},
+body: JSON.stringify({ button: btnNum, pressed: false })
+}).catch(() => {});
+
+});
+
+});
+
+/* -------------- TEXT COMMAND -------------- */
+
+const textInput = document.getElementById("userText");
+
+textInput.addEventListener("keypress", function(event) {
+
+if (event.key === "Enter") {
+event.preventDefault();
+sendText();
+}
+
+});
+
+function sendText() {
+
+const text = textInput.value.trim();
+
+if (text === "") return;
+
+fetch("/text", {
+method: "POST",
+headers: {"Content-Type": "application/json"},
+body: JSON.stringify({ text: text })
+})
+.then(response => response.json())
+.then(data => {
+
+document.getElementById("serverResponse").innerText = data.response;
+textInput.value = "";
+
+})
+.catch(() => {});
+
+}
 
 </script>
 
