@@ -8,7 +8,7 @@ import action_functions
 import motor
 
 def tts(text, pitch):
-    os.system(f"espeak-ng -v EN-gb-scotland -a 10 -p {pitch} -s 125 '{text}'")
+    os.system(f"espeak-ng -v EN-gb-scotland -a 20 -p {pitch} -s 50 '{text}'")
 
 #servo = Controller()
 @app.route("/")
@@ -82,7 +82,6 @@ def text_input():
     global depth
     global scope
     global variables
-    print("State:", state)
     if state == 'boot':
         d, c = dialogueParser.parseText('test.txt')
         state = 'idle'
@@ -91,6 +90,7 @@ def text_input():
     data = request.json
     text = data.get("text", "")
     print(f"User text: {text}")
+    text = text.strip().toLower()
     returnedText, returnedAction, depth, scope, variables = dialogueParser.interpretText(text, d,c ,depth, scope, variables)
     print("returned text:" , returnedText)
     print("action:", returnedAction)
