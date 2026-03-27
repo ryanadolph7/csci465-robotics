@@ -15,7 +15,7 @@ from adafruit_rplidar import RPLidar
 import threading
 
 
-state = {
+detection = {
     "forwardThing": False,
     "backwardThing": False
 }
@@ -24,17 +24,16 @@ def backgroundTest():
     lidar = RPLidar(None, '/dev/ttyUSB0', timeout=3)
     while True:
         for scan in lidar.iter_scans():
-
             for (_, angle, distance) in scan:
                 if ((angle > 345) or (angle < 15)):
                     # front detection
                     if (distance < 400):
-                        state["forwardThing"] = True
+                        detection["forwardThing"] = True
                         print("Too close at the front")
                 if ((angle > 165) and (angle < 195)):
                     # back detection
                     if (distance < 400):
-                        state["backwardThing"] = True
+                        detection["backwardThing"] = True
                         print("Too close at the back")
 
 
@@ -65,18 +64,14 @@ def index():
     global variables
     variables = {"name": "i don't know", "age": "i don't know", "color": "i don't know"}
     state = 'boot'
-
-
-
-
     #ensures that if the webpage is reloaded, all servos are reset
     motor.fullReset()
     return render_template("index.html")
 
 @app.route("/joystick", methods=["POST"])
 def joystick():
-    state["forwardThing"] = False
-    state["backwardThing"] = False
+    detection["forwardThing"] = False
+    detection["backwardThing"] = False
     time.sleep(0.001)
     #data is sent
     data = request.json
@@ -86,8 +81,8 @@ def joystick():
     if(math.fabs(x) > 1 or math.fabs(y) > 1):
         return jsonify({"status": "bad"})
     print(f"Joystick X: {x}, Y: {y}")
-    print("Forward object", state["forwardThing"])
-    print("Backward object", state["backwardThing"])
+    print("Forward object", detection["forwardThing"])
+    print("Backward object", detection["backwardThing"])
     yAxis = int(1200*float(y))
     xAxis = int(1000 * float(x))
     #data is interpreted and translated into servo control
