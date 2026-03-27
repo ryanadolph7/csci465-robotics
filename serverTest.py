@@ -10,6 +10,19 @@ import math
 import dialogueParser
 import action_functions
 import motor
+from adafruit_rplidar import RPLidar
+import threading
+
+
+def backgroundTest():
+    lidar = RPLidar(None, '/dev/ttyUSB0', timeout=3)
+    while True:
+
+
+
+
+
+
 
 def remove_punctuation_translate(text):
     # Create a translation table that maps every punctuation character to None (deletion)
@@ -135,4 +148,6 @@ def text_input():
 
 #Resets all motors when the flask server is started/restarted
 motor.fullReset()
+thread = threading.Thread(target=backgroundTest, daemon=True)
+thread.start()
 app.run(host="0.0.0.0", port=5000, debug=False)
