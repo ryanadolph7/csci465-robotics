@@ -1,6 +1,7 @@
 import random
 import string
 import sys
+import time
 
 from flask import Flask, render_template, request, jsonify
 from maestro import Controller
@@ -14,9 +15,27 @@ from adafruit_rplidar import RPLidar
 import threading
 
 
+state = {
+    "forwardThing": False,
+    "backwardThing": False
+}
+
 def backgroundTest():
     lidar = RPLidar(None, '/dev/ttyUSB0', timeout=3)
     while True:
+        for scan in lidar.iter_scans():
+
+            for (_, angle, distance) in scan:
+                if ((angle > 345) or (angle < 15)):
+                    # front detection
+                    if (distance < 400):
+                        state["forwardThing"] = True
+                        print("Too close at the front")
+                if ((angle > 165) and (angle < 195)):
+                    # back detection
+                    if (distance < 400):
+                        state["backwardThing"] = True
+                        print("Too close at the back")
 
 
 
@@ -56,6 +75,9 @@ def index():
 
 @app.route("/joystick", methods=["POST"])
 def joystick():
+    state["forwardThing"] = False
+    state["backwardThing"] = False
+    time.sleep(0.001)
     #data is sent
     data = request.json
     x = data.get("x")
