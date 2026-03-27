@@ -86,6 +86,8 @@ def joystick():
     if(math.fabs(x) > 1 or math.fabs(y) > 1):
         return jsonify({"status": "bad"})
     print(f"Joystick X: {x}, Y: {y}")
+    print("Forward object", state["forwardThing"])
+    print("Backward object", state["backwardThing"])
     yAxis = int(1200*float(y))
     xAxis = int(1000 * float(x))
     #data is interpreted and translated into servo control
