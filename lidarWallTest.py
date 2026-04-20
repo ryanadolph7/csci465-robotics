@@ -29,10 +29,33 @@ sensor_data = {
 # -----------------------------
 # LIDAR THREAD
 # -----------------------------
-def lidar_thread():
-    lidar = RPLidar(None, PORT_NAME, timeout=3)
 
-    while True:
+def restart_lidar(lidar):
+    try:
+        lidar.stop()
+        lidar.stop_motor()
+    except:
+        pass
+
+    time.sleep(0.5)
+
+    try:
+        lidar.disconnect()
+    except:
+        pass
+
+    time.sleep(0.5)
+
+    lidar.connect()
+    lidar.start_motor()
+    time.sleep(1)
+
+def lidar_thread():
+    lidar = RPLidar(None, '/dev/ttyUSB0', baudrate=115200, timeout=3)
+
+    try:
+        lidar.start_motor()
+        time.sleep(1)
         for scan in lidar.iter_scans():
             front_vals = []
             right_vals = []
@@ -53,6 +76,17 @@ def lidar_thread():
 
             if right_vals:
                 sensor_data["right"] = min(right_vals)
+
+    except Exception as e:
+        print("LIDAR failure:", repr(e))
+        restart_lidar(lidar)
+
+    finally:
+        lidar.stop()
+        lidar.stop_motor()
+        lidar.disconnect()
+
+
 
 # -----------------------------
 # MOTOR HELPERS
