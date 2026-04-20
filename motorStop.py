@@ -1,0 +1,2 @@
+import motor
+motor.fullReset()
