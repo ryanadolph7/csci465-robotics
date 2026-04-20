@@ -15,7 +15,7 @@ TOLERANCE = 100           # buffer zone
 FRONT_THRESHOLD = 400     # obstacle distance
 LOST_WALL_DISTANCE = 1200 # if wall too far → considered lost
 
-BASE_SPEED = 800          # forward speed
+BASE_SPEED = 600          # forward speed
 TURN_ADJUST = 300         # steering strength
 
 # -----------------------------
@@ -66,8 +66,8 @@ def lidar_thread():
                 if angle > 340 or angle < 20:
                     front_vals.append(distance)
 
-                # RIGHT: 250–290
-                if 250 < angle < 290:
+                # RIGHT: 40-80
+                if 40 < angle < 80:
                     right_vals.append(distance)
 
             # Use minimum distance (more reactive)
@@ -110,49 +110,52 @@ def main():
     while True:
         front = sensor_data["front"]
         right = sensor_data["right"]
-
-        print(f"Front: {front:.1f} | Right: {right:.1f}")
-
-        # -------------------------
-        # CASE 1: obstacle in front
-        # -------------------------
-        if front < FRONT_THRESHOLD:
-            print("Obstacle ahead → turning left")
-            drive(0, TURN_ADJUST)  # turn left
-            time.sleep(0.1)
-            continue
-
-        # -------------------------
-        # CASE 4: wall lost
-        # -------------------------
-        if right > LOST_WALL_DISTANCE:
-            print("Wall lost → searching right")
-            drive(BASE_SPEED // 2, -TURN_ADJUST)  # turn right
-            time.sleep(0.1)
-            continue
-
-        # -------------------------
-        # CASE 2: too close to wall
-        # -------------------------
-        if right < TARGET_DISTANCE - TOLERANCE:
-            print("Too close → steering left")
-            drive(BASE_SPEED, TURN_ADJUST)
-
-        # -------------------------
-        # CASE 3: too far from wall
-        # -------------------------
-        elif right > TARGET_DISTANCE + TOLERANCE:
-            print("Too far → steering right")
-            drive(BASE_SPEED, -TURN_ADJUST)
-
-        # -------------------------
-        # GOOD POSITION
-        # -------------------------
+        if(front or right == 9999):
+            print("lidar not working")
         else:
-            print("On track → straight")
-            drive(BASE_SPEED, 0)
 
-        time.sleep(0.05)
+            print(f"Front: {front:.1f} | Right: {right:.1f}")
+
+            # -------------------------
+            # CASE 1: obstacle in front
+            # -------------------------
+            if front < FRONT_THRESHOLD:
+                print("Obstacle ahead → turning left")
+                drive(0, TURN_ADJUST)  # turn left
+                time.sleep(0.1)
+                continue
+
+            # -------------------------
+            # CASE 4: wall lost
+            # -------------------------
+            if right > LOST_WALL_DISTANCE:
+                print("Wall lost → searching right")
+                drive(BASE_SPEED // 2, -TURN_ADJUST)  # turn right
+                time.sleep(0.1)
+                continue
+
+            # -------------------------
+            # CASE 2: too close to wall
+            # -------------------------
+            if right < TARGET_DISTANCE - TOLERANCE:
+                print("Too close → steering left")
+                drive(BASE_SPEED, TURN_ADJUST)
+
+            # -------------------------
+            # CASE 3: too far from wall
+            # -------------------------
+            elif right > TARGET_DISTANCE + TOLERANCE:
+                print("Too far → steering right")
+                drive(BASE_SPEED, -TURN_ADJUST)
+
+            # -------------------------
+            # GOOD POSITION
+            # -------------------------
+            else:
+                print("On track → straight")
+                drive(BASE_SPEED, 0)
+
+            time.sleep(0.05)
 
 # -----------------------------
 # STARTUP
