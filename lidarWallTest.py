@@ -9,10 +9,10 @@ import threading
 # -----------------------------
 PORT_NAME = '/dev/ttyUSB0'
 
-TARGET_DISTANCE = 500      # mm (distance from wall)
-TOLERANCE = 100           # buffer zone
+TARGET_DISTANCE = 550      # mm (distance from wall)
+TOLERANCE = 25           # buffer zone
 
-FRONT_THRESHOLD = 400     # obstacle distance
+FRONT_THRESHOLD = 500     # obstacle distance
 LOST_WALL_DISTANCE = 1200 # if wall too far → considered lost
 
 BASE_SPEED = 600          # forward speed
@@ -70,7 +70,7 @@ def lidar_thread():
                     front_vals.append(distance)
 
                 # RIGHT: 40-80
-                if 40 < angle < 80:
+                if 30 < angle < 90:
                     right_vals.append(distance)
 
             # Use minimum distance (more reactive)
@@ -114,51 +114,56 @@ def main():
 
     while True:
         front = sensor_data["front"]
-        right = sensor_data["right"]
+        rightData = sensor_data["right"]
         #if(front or right == 9999):
             #print("lidar not working")
         #else:
-
-        print(f"Front: {front:.1f} | Right: {right:.1f}")
+        # If LIDAR is reading jumble/default values, do nothing
+        if front == 9999.0 and rightData == 9999.0:
+            print("LIDAR not ready / bad reading → doing nothing")
+            stop()
+            time.sleep(0.1)
+            continue
+        left = 6000
+        right = 6000
+        print(f"Front: {front:.1f} | Right: {rightData:.1f}")
 
         # -------------------------
         # CASE 1: obstacle in front
         # -------------------------
         if front < FRONT_THRESHOLD:
             print("Obstacle ahead → turning left")
-            motor.rightWheel(6600)
-            motor.leftWheel(6000)
+            right = 6700
+            left = 6000
             #drive(0, -TURN_ADJUST)  # turn left
-            time.sleep(0.1)
-            continue
+            
 
         # -------------------------
         # CASE 4: wall lost
         # -------------------------
-        if right > LOST_WALL_DISTANCE:
+        elif rightData > LOST_WALL_DISTANCE:
             print("Wall lost → searching right")
-            motor.leftWheel(5300)
-            motor.rightWheel(6300)
+            left = 5200
+            right = 6400
             #drive(BASE_SPEED // 2, TURN_ADJUST)  # turn right
-            time.sleep(0.1)
-            continue
+            
 
         # -------------------------
         # CASE 2: too close to wall
         # -------------------------
-        if right < TARGET_DISTANCE - TOLERANCE:
+        elif rightData < TARGET_DISTANCE + TOLERANCE :
             print("Too close → steering left")
-            motor.rightWheel(6700)
-            motor.leftWheel(5700)
+            right = 6900
+            left = 5500
             #drive(BASE_SPEED, -TURN_ADJUST)
 
         # -------------------------
         # CASE 3: too far from wall
         # -------------------------
-        elif right > TARGET_DISTANCE + TOLERANCE:
+        elif rightData > TARGET_DISTANCE - TOLERANCE:
             print("Too far → steering right")
-            motor.leftWheel(5300)
-            motor.rightWheel(6300)
+            left = 5150
+            right = 6700
             #drive(BASE_SPEED, TURN_ADJUST)
 
         # -------------------------
@@ -166,10 +171,13 @@ def main():
         # -------------------------
         else:
             print("On track → straight")
-            motor.leftWheel(5400)
-            motor.rightWheel(6600)
+            left = 5300
+            right = 6700
             #drive(BASE_SPEED, 0)
-        time.sleep(0.05)
+        print("Left wheel:", left, "right wheel:", right)
+        motor.leftWheel(left)
+        motor.rightWheel(right)
+        time.sleep(0.01)
 
 # -----------------------------
 # STARTUP
@@ -177,6 +185,6 @@ def main():
 if __name__ == "__main__":
     t = threading.Thread(target=lidar_thread, daemon=True)
     t.start()
-    time.sleep(8)
+    time.sleep(4)
 
     main()
