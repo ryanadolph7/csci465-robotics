@@ -12,7 +12,7 @@ import threading
 # -----------------------------
 PORT_NAME = '/dev/ttyUSB0'
 
-TARGET_DISTANCE = 550      # mm (distance from wall)
+TARGET_DISTANCE = 750      # mm (distance from wall)
 TOLERANCE = 25           # buffer zone
 
 FRONT_THRESHOLD = 500     # obstacle distance
@@ -136,7 +136,7 @@ def main():
         # -------------------------
         if front < FRONT_THRESHOLD:
             print("Obstacle ahead → turning left")
-            right = 6700
+            right = 6850
             left = 6000
             #drive(0, -TURN_ADJUST)  # turn left
             
@@ -146,27 +146,27 @@ def main():
         # -------------------------
         elif rightData > LOST_WALL_DISTANCE:
             print("Wall lost → searching right")
-            left = 5200
-            right = 6400
+            left = 5250
+            right = 6650
             #drive(BASE_SPEED // 2, TURN_ADJUST)  # turn right
             
 
         # -------------------------
         # CASE 2: too close to wall
         # -------------------------
-        elif rightData < TARGET_DISTANCE + TOLERANCE :
+        elif rightData < TARGET_DISTANCE - TOLERANCE:
             print("Too close → steering left")
-            right = 6900
-            left = 5500
+            right = 6950
+            left = 5400
             #drive(BASE_SPEED, -TURN_ADJUST)
 
         # -------------------------
         # CASE 3: too far from wall
         # -------------------------
-        elif rightData > TARGET_DISTANCE - TOLERANCE:
+        elif rightData > TARGET_DISTANCE + TOLERANCE:
             print("Too far → steering right")
-            left = 5150
-            right = 6700
+            left = 5200
+            right = 6650
             #drive(BASE_SPEED, TURN_ADJUST)
 
         # -------------------------
@@ -175,7 +175,7 @@ def main():
         else:
             print("On track → straight")
             left = 5300
-            right = 6700
+            right = 6750
             #drive(BASE_SPEED, 0)
         print("Left wheel:", left, "right wheel:", right)
         motor.leftWheel(left)
