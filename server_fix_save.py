@@ -47,23 +47,35 @@ def stop_drive():
     motor.rightWheel(STOP_PWM)
 
 
+def restart_lidar(lidar):
+    try:
+        lidar.stop()
+        lidar.stop_motor()
+    except:
+        pass
+
+    time.sleep(0.5)
+
+    try:
+        lidar.disconnect()
+    except:
+        pass
+
+    time.sleep(0.5)
+
+    lidar.connect()
+    lidar.start_motor()
+    time.sleep(1)
+
 def backgroundTest():
     lidar = RPLidar(None, '/dev/ttyUSB0', baudrate=115200, timeout=3)
-    lidar.stop()
-    time.sleep(.3)
-    lidar.stop_motor()
-    time.sleep(.3)
-    lidar.clear_input()
-    time.sleep(.3)
-    print("Resetting lidar")
-    lidar.reset()
-    time.sleep(1)
-    #print(lidar.get_health())
-    while True:
-        try:
 
-        #while True:
-            for scan in lidar.iter_scans():
+    try:
+        lidar.start_motor()
+        time.sleep(1)
+
+        for scan in lidar.iter_scans():
+            try:
                 front_blocked = False
                 back_blocked = False
 
@@ -100,37 +112,18 @@ def backgroundTest():
 
                 if should_stop:
                     stop_drive()
-                    if stop_reason == "front":
-                        print("Emergency stop: object detected directly in FRONT")
-                    elif stop_reason == "back":
-                        print("Emergency stop: object detected directly in BACK")
 
-                if front_blocked != last_reported["front"]:
-                    if front_blocked:
-                        print("Object detected directly in FRONT")
-                    else:
-                        print("Front is clear")
-                    last_reported["front"] = front_blocked
+            except Exception as e:
+                print("Scan processing error:", repr(e))
 
-                if back_blocked != last_reported["back"]:
-                    if back_blocked:
-                        print("Object detected directly in BACK")
-                    else:
-                        print("Back is clear")
-                    last_reported["back"] = back_blocked
+    except Exception as e:
+        print("LIDAR failure:", repr(e))
+        restart_lidar(lidar)
 
-        except Exception as e:
-            print("LIDAR thread crashed:", repr(e))
-            lidar.clear_input()
-        finally:
-            try:
-                stop_drive()
-                lidar.stop()
-                lidar.disconnect()
-                lidar = RPLidar(None, '/dev/ttyUSB0', baudrate=115200, timeout=3)
-            except Exception:
-                pass
-
+    finally:
+        lidar.stop()
+        lidar.stop_motor()
+        lidar.disconnect()
 
 
 def remove_punctuation_translate(text):
