@@ -177,5 +177,4 @@ if __name__ == "__main__":
     t = threading.Thread(target=lidar_thread, daemon=True)
     t.start()
     time.sleep(4)
-
     main()
