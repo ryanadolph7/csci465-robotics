@@ -90,7 +90,8 @@ def tts(text):
     os.system(f"espeak-ng -v EN-gb-scotland -a 30 -p {30} -s 50 '{text}'")
 
 def goUntilT():
-    MISSING_WALL = 1500
+    MISSING_WALL = 1800
+    print(sensor_data["left"], sensor_data["right"])
     while(sensor_data["left"] < MISSING_WALL or sensor_data["right"] < MISSING_WALL):
         motor.leftWheel(5500)
         motor.rightWheel(6500)
@@ -100,12 +101,12 @@ def goUntilT():
 
 def alignToHall():
     # Wall-following target
-    TARGET_DISTANCE = 2000  # mm from the right wall
-    TOLERANCE = 35  # mm deadband around target
+    TARGET_DISTANCE = 1300  # mm from the right wall
+    TOLERANCE = 100  # mm deadband around target
 
     # LIDAR thresholds
     FRONT_THRESHOLD = 500  # mm; obstacle directly ahead
-    LOST_WALL_DISTANCE = 1200  # mm; right wall considered lost
+    LOST_WALL_DISTANCE = 1800  # mm; right wall considered lost
 
     # Motor calibration
     # These are your known-good straight-driving values.
@@ -114,11 +115,11 @@ def alignToHall():
     RIGHT_MOTOR_TRIM = 50  # right motor needs about +50 to match left motor
 
     # Smooth steering tuning
-    KP = 0.55  # proportional steering gain
+    KP = 0.4  # proportional steering gain
     MAX_STEER = 450  # maximum normal wall-follow correction
     LOST_WALL_STEER = 350  # positive = smoothly search/turn right
     OBSTACLE_STEER = -500  # negative = turn left away from obstacle
-    STEER_ALPHA = 0.15  # lower = smoother/slower, higher = more reactive
+    STEER_ALPHA = 0.05  # lower = smoother/slower, higher = more reactive
     MOTOR_RAMP = 35  # maximum motor command change per loop
     LOOP_DELAY = 0.03  # seconds
 
@@ -176,9 +177,11 @@ def alignToHall():
                 print("Too far -> smoothly drifting right")
             else:
                 print("On track -> straight")
-                motor.leftWheel(6000)
-                motor.rightWheel(6000)
-                return True
+                print(sensor_data["left"], sensor_data["right"])
+                if(sensor_data["right"] - 100 < sensor_data["left"] < sensor_data["right"]+ 100):
+                    motor.leftWheel(6000)
+                    motor.rightWheel(6000)
+                    return True
 
         # -------------------------
         # Smooth the steering command
