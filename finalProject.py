@@ -98,6 +98,121 @@ def goUntilT():
     motor.rightWheel(6000)
     return True
 
+def alignToHall():
+    # Wall-following target
+    TARGET_DISTANCE = 2000  # mm from the right wall
+    TOLERANCE = 35  # mm deadband around target
+
+    # LIDAR thresholds
+    FRONT_THRESHOLD = 500  # mm; obstacle directly ahead
+    LOST_WALL_DISTANCE = 1200  # mm; right wall considered lost
+
+    # Motor calibration
+    # These are your known-good straight-driving values.
+    LEFT_STRAIGHT = 5300
+    RIGHT_STRAIGHT = 6750
+    RIGHT_MOTOR_TRIM = 50  # right motor needs about +50 to match left motor
+
+    # Smooth steering tuning
+    KP = 0.55  # proportional steering gain
+    MAX_STEER = 450  # maximum normal wall-follow correction
+    LOST_WALL_STEER = 350  # positive = smoothly search/turn right
+    OBSTACLE_STEER = -500  # negative = turn left away from obstacle
+    STEER_ALPHA = 0.15  # lower = smoother/slower, higher = more reactive
+    MOTOR_RAMP = 35  # maximum motor command change per loop
+    LOOP_DELAY = 0.03  # seconds
+
+    # Motor command safety limits based on your previous working values
+    LEFT_MIN = 5000
+    LEFT_MAX = 5700
+    RIGHT_MIN = 6400
+    RIGHT_MAX = 7100  # allows RIGHT_MOTOR_TRIM headroom
+    motor.fullReset()
+
+    smoothed_steer = 0.0
+    current_left = float(LEFT_STRAIGHT)
+    current_right = float(RIGHT_STRAIGHT + RIGHT_MOTOR_TRIM)
+
+    while True:
+        front = sensor_data["front"]
+        right_data = sensor_data["right"]
+
+        # If LIDAR is reading jumble/default values, stop and wait.
+        if front == 9999.0 and right_data == 9999.0:
+            print("LIDAR not ready / bad reading -> stopping")
+            stop()
+            time.sleep(0.1)
+            continue
+
+        print(f"Front: {front:.1f} | Right: {right_data:.1f}")
+
+        # -------------------------
+        # Decide desired steering
+        # -------------------------
+        if front < FRONT_THRESHOLD:
+            print("Obstacle ahead -> smoothly steering left")
+            desired_steer = OBSTACLE_STEER
+
+        elif right_data > LOST_WALL_DISTANCE:
+            print("Wall lost -> smoothly searching right")
+            desired_steer = LOST_WALL_STEER
+
+        else:
+            # Positive error means the robot is too far from the right wall.
+            # Negative error means the robot is too close to the right wall.
+            error = right_data - TARGET_DISTANCE
+
+            if abs(error) < TOLERANCE:
+                error = 0
+
+            # Positive steer turns/searches right.
+            # Negative steer moves away from the wall to the left.
+            desired_steer = KP * error
+            desired_steer = clamp(desired_steer, -MAX_STEER, MAX_STEER)
+
+            if error < 0:
+                print("Too close -> smoothly drifting left")
+            elif error > 0:
+                print("Too far -> smoothly drifting right")
+            else:
+                print("On track -> straight")
+                motor.leftWheel(6000)
+                motor.rightWheel(6000)
+                return True
+
+        # -------------------------
+        # Smooth the steering command
+        # -------------------------
+        smoothed_steer = ((1 - STEER_ALPHA) * smoothed_steer
+                          + STEER_ALPHA * desired_steer)
+
+        # -------------------------
+        # Convert steering into motor commands
+        # -------------------------
+        # With your motor directions:
+        #   positive steer = turn right: left wheel faster, right wheel slower
+        #   negative steer = turn left:  left wheel slower, right wheel faster
+        target_left = LEFT_STRAIGHT - smoothed_steer
+        target_right = RIGHT_STRAIGHT - smoothed_steer + RIGHT_MOTOR_TRIM
+
+        target_left = clamp(target_left, LEFT_MIN, LEFT_MAX)
+        target_right = clamp(target_right, RIGHT_MIN, RIGHT_MAX)
+
+        # Ramp motor commands so they change slowly instead of jumping.
+        current_left = ramp_toward(current_left, target_left, MOTOR_RAMP)
+        current_right = ramp_toward(current_right, target_right, MOTOR_RAMP)
+
+        print(
+            f"Steer: {smoothed_steer:.1f} | "
+            f"Left wheel: {current_left:.0f} | Right wheel: {current_right:.0f}"
+        )
+
+        motor.leftWheel(int(current_left))
+        motor.rightWheel(int(current_right))
+
+        time.sleep(LOOP_DELAY)
+
+
 def main():
     STATE = "TURNING_AROUND"
     LOCATION = None
@@ -157,7 +272,7 @@ def main():
             motor.rightWheel(6000)
             STATE = "ALIGNING_TO_HALLWAY"
         elif(STATE == "ALIGNING_TO_HALLWAY"):
-            lidarWallTest_smooth_fixed.lidarIt()
+            alignToHall()
             #robot centers itself
             STATE = "MOVING_TO_T"
         elif(STATE == "MOVING_TO_T"):
