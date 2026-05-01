@@ -213,6 +213,22 @@ def alignToHall():
         time.sleep(LOOP_DELAY)
 
 
+def clamp(value, low, high):
+    return max(low, min(high, value))
+
+
+def ramp_toward(current, target, max_step):
+    if target > current + max_step:
+        return current + max_step
+    if target < current - max_step:
+        return current - max_step
+    return target
+
+
+def stop():
+    motor.leftWheel(6000)
+    motor.rightWheel(6000)
+
 def main():
     STATE = "TURNING_AROUND"
     LOCATION = None
