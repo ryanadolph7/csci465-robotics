@@ -284,7 +284,7 @@ def main():
             tts("Follow Me!")
             #robot 180's
             motor.rightWheel(7000)
-            time.sleep(0.5)
+            time.sleep(1)
             motor.rightWheel(6000)
             STATE = "ALIGNING_TO_HALLWAY"
         elif(STATE == "ALIGNING_TO_HALLWAY"):
@@ -293,8 +293,8 @@ def main():
             STATE = "MOVING_TO_T"
         elif(STATE == "MOVING_TO_T"):
             #need to detect if hallway dissapears on both sides
-            if(True):
-                STATE = "TURNING_TO_DESTINATION"
+            goUntilT()
+            STATE = "TURNING_TO_DESTINATION"
             #otherwise keep moving forward
         elif(STATE == "TURNING_TO_DESTINATION"):
             # Turn left or right
