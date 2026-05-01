@@ -139,7 +139,37 @@ def stop():
 # -----------------------------
 # MAIN CONTROL LOOP
 # -----------------------------
-def main():
+def lidarIt():
+    PORT_NAME = '/dev/ttyUSB0'
+
+    # Wall-following target
+    TARGET_DISTANCE = 2000  # mm from the right wall
+    TOLERANCE = 35  # mm deadband around target
+
+    # LIDAR thresholds
+    FRONT_THRESHOLD = 500  # mm; obstacle directly ahead
+    LOST_WALL_DISTANCE = 1200  # mm; right wall considered lost
+
+    # Motor calibration
+    # These are your known-good straight-driving values.
+    LEFT_STRAIGHT = 5300
+    RIGHT_STRAIGHT = 6750
+    RIGHT_MOTOR_TRIM = 50  # right motor needs about +50 to match left motor
+
+    # Smooth steering tuning
+    KP = 0.55  # proportional steering gain
+    MAX_STEER = 450  # maximum normal wall-follow correction
+    LOST_WALL_STEER = 350  # positive = smoothly search/turn right
+    OBSTACLE_STEER = -500  # negative = turn left away from obstacle
+    STEER_ALPHA = 0.15  # lower = smoother/slower, higher = more reactive
+    MOTOR_RAMP = 35  # maximum motor command change per loop
+    LOOP_DELAY = 0.03  # seconds
+
+    # Motor command safety limits based on your previous working values
+    LEFT_MIN = 5000
+    LEFT_MAX = 5700
+    RIGHT_MIN = 6400
+    RIGHT_MAX = 7100  # allows RIGHT_MOTOR_TRIM headroom
     motor.fullReset()
 
     smoothed_steer = 0.0
@@ -189,6 +219,9 @@ def main():
                 print("Too far -> smoothly drifting right")
             else:
                 print("On track -> straight")
+                motor.leftWheel(6000)
+                motor.rightWheel(6000)
+                return True
 
         # -------------------------
         # Smooth the steering command
@@ -230,4 +263,4 @@ if __name__ == "__main__":
     t.start()
     time.sleep(4)
 
-    main()
+    lidarIt()

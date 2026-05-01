@@ -6,12 +6,15 @@ import wave
 import json
 from vosk import Model, KaldiRecognizer
 import motor
+import lidarWallTest_smooth_fixed
 from adafruit_rplidar import RPLidar
 import threading
 
+
 sensor_data = {
     "front": 9999,
-    "right": 9999
+    "right": 9999,
+    "left": 9999
 }
 
 FRONT_THRESHOLD = 200
@@ -49,6 +52,7 @@ def lidar_thread():
         for scan in lidar.iter_scans():
             front_vals = []
             right_vals = []
+            left_vals = []
 
             for (_, angle, distance) in scan:
 
@@ -60,12 +64,18 @@ def lidar_thread():
                 if 30 < angle < 90:
                     right_vals.append(distance)
 
+                if 270 < angle < 330:
+                    left_vals.append(distance)
+
             # Use minimum distance (more reactive)
             if front_vals:
                 sensor_data["front"] = min(front_vals)
 
             if right_vals:
                 sensor_data["right"] = min(right_vals)
+
+            if left_vals:
+                sensor_data["left"] = min(left_vals)
 
     except Exception as e:
         print("LIDAR failure:", repr(e))
@@ -78,6 +88,15 @@ def lidar_thread():
 
 def tts(text):
     os.system(f"espeak-ng -v EN-gb-scotland -a 30 -p {30} -s 50 '{text}'")
+
+def goUntilT():
+    MISSING_WALL = 1500
+    while(sensor_data["left"] < MISSING_WALL or sensor_data["right"] < MISSING_WALL):
+        motor.leftWheel(5500)
+        motor.rightWheel(6500)
+    motor.leftWheel(6000)
+    motor.rightWheel(6000)
+    return True
 
 def main():
     STATE = "WAITING"
@@ -128,15 +147,17 @@ def main():
                             LOCATION = "example"
             #figure out how to do speech recognition
             #robot says "follow me"
-            tts("Follow Me!")
             STATE = "TURNING_AROUND"
         elif(STATE == "TURNING_AROUND"):
+            LOCATION = "bathroom"
+            tts("Follow Me!")
             #robot 180's
             motor.rightWheel(7000)
             time.sleep(0.5)
             motor.rightWheel(6000)
             STATE = "ALIGNING_TO_HALLWAY"
         elif(STATE == "ALIGNING_TO_HALLWAY"):
+            lidarWallTest_smooth_fixed.lidarIt()
             #robot centers itself
             STATE = "MOVING_TO_T"
         elif(STATE == "MOVING_TO_T"):
