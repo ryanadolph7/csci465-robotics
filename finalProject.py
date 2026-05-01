@@ -99,7 +99,7 @@ def goUntilT():
     return True
 
 def main():
-    STATE = "WAITING"
+    STATE = "TURNING_AROUND"
     LOCATION = None
     while True:
         print("STATE:", STATE)
