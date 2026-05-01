@@ -178,7 +178,7 @@ def alignToHall():
             else:
                 print("On track -> straight")
                 print(sensor_data["left"], sensor_data["right"])
-                if(sensor_data["right"] - 100 < sensor_data["left"] < sensor_data["right"]+ 100):
+                if(sensor_data["right"] > LOST_WALL_DISTANCE and sensor_data["left"] > LOST_WALL_DISTANCE):
                     motor.leftWheel(6000)
                     motor.rightWheel(6000)
                     return True
@@ -296,7 +296,6 @@ def main():
             STATE = "MOVING_TO_T"
         elif(STATE == "MOVING_TO_T"):
             #need to detect if hallway dissapears on both sides
-            goUntilT()
             STATE = "TURNING_TO_DESTINATION"
             #otherwise keep moving forward
         elif(STATE == "TURNING_TO_DESTINATION"):
