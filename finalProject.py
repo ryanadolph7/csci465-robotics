@@ -17,7 +17,7 @@ sensor_data = {
     "left": 9999
 }
 
-FRONT_THRESHOLD = 200
+FRONT_THRESHOLD = 400
 api_key = 'd71a9e57cc704cbdb50e5a7b6679e478'
 
 def restart_lidar(lidar):
@@ -101,12 +101,12 @@ def goUntilT():
 
 def alignToHall():
     # Wall-following target
-    TARGET_DISTANCE = 1300  # mm from the right wall
+    TARGET_DISTANCE = 1200  # mm from the right wall
     TOLERANCE = 100  # mm deadband around target
 
     # LIDAR thresholds
     FRONT_THRESHOLD = 500  # mm; obstacle directly ahead
-    LOST_WALL_DISTANCE = 1800  # mm; right wall considered lost
+    LOST_WALL_DISTANCE = 1600  # mm; right wall considered lost
 
     # Motor calibration
     # These are your known-good straight-driving values.
@@ -145,11 +145,16 @@ def alignToHall():
             time.sleep(0.1)
             continue
 
-        print(f"Front: {front:.1f} | Right: {right_data:.1f}")
+        print(f"Front: {front:.1f} | Right: {right_data:.1f} | Left: {sensor_data["left"]:.1f}")
 
         # -------------------------
         # Decide desired steering
         # -------------------------
+        if(sensor_data["right"] > LOST_WALL_DISTANCE and sensor_data["left"] > LOST_WALL_DISTANCE):
+            motor.leftWheel(6000)
+            motor.rightWheel(6000)
+            return True
+
         if front < FRONT_THRESHOLD:
             print("Obstacle ahead -> smoothly steering left")
             desired_steer = OBSTACLE_STEER
@@ -170,7 +175,7 @@ def alignToHall():
             # Negative steer moves away from the wall to the left.
             desired_steer = KP * error
             desired_steer = clamp(desired_steer, -MAX_STEER, MAX_STEER)
-
+            
             if error < 0:
                 print("Too close -> smoothly drifting left")
             elif error > 0:
@@ -178,10 +183,7 @@ def alignToHall():
             else:
                 print("On track -> straight")
                 print(sensor_data["left"], sensor_data["right"])
-                if(sensor_data["right"] > LOST_WALL_DISTANCE and sensor_data["left"] > LOST_WALL_DISTANCE):
-                    motor.leftWheel(6000)
-                    motor.rightWheel(6000)
-                    return True
+                
 
         # -------------------------
         # Smooth the steering command
@@ -286,9 +288,11 @@ def main():
             LOCATION = "bathroom"
             tts("Follow Me!")
             #robot 180's
-            motor.rightWheel(7000)
-            time.sleep(1)
+            motor.rightWheel(7500)
+            motor.leftWheel(7500)
+            time.sleep(1.1)
             motor.rightWheel(6000)
+            motor.leftWheel(6000)
             STATE = "ALIGNING_TO_HALLWAY"
         elif(STATE == "ALIGNING_TO_HALLWAY"):
             alignToHall()
@@ -307,8 +311,8 @@ def main():
                 motor.leftWheel(6000)
             else:
                 #turn left
-                motor.rightWheel(7000)
-                time.sleep(0.5)
+                motor.rightWheel(7500)
+                time.sleep(1.1)
                 motor.rightWheel(6000)
             STATE = "FINAL_MOVEMENT"
         elif(STATE == "FINAL_MOVEMENT"):
