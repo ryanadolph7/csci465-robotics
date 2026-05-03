@@ -1,9 +1,13 @@
 import os
 import time
+
+import numpy as np
 import sounddevice as sd
 from scipy.io.wavfile import write
 import wave
 import json
+
+from scipy.signal import resample
 from vosk import Model, KaldiRecognizer
 import motor
 import lidarWallTest_smooth_fixed
@@ -249,53 +253,85 @@ def main():
             tts("Hello, how can I help you?")
             STATE = "LISTENING"
         elif(STATE == "LISTENING"):
-            
-            fs = 48000  # Vosk works best at 16kHz
-            seconds = 5
+
+            # -------------------
+            # SETTINGS
+            # -------------------
+            fs = 48000  # your mic's native rate
+            target_fs = 16000  # Vosk-required rate
+            seconds = 3
+
             model = Model("model")
             LOCATION = "example"
-            while (LOCATION == "example"):
-                print("Recording...")
-                audio = sd.rec(int(seconds * fs), samplerate=fs, channels=1, dtype='int16')
-                sd.wait()
-                print("Done!")
 
-                write("test.wav", fs, audio)
+            # -------------------
+            # RECORD AUDIO
+            # -------------------
+            print("Recording...")
+            audio = sd.rec(int(seconds * fs), samplerate=fs, channels=1, dtype='int16')
+            sd.wait()
+            print("Done!")
 
-                wf = wave.open("test.wav", "rb")
+            # Convert to 1D array
+            audio = audio.flatten()
 
-                rec = KaldiRecognizer(model, wf.getframerate())
+            # -------------------
+            # RESAMPLE TO 16kHz
+            # -------------------
+            num_samples = int(len(audio) * target_fs / fs)
+            audio_resampled = resample(audio, num_samples).astype(np.int16)
 
-                # -------------------
-                # PROCESS AUDIO
-                # -------------------
-                while True:
-                    data = wf.readframes(4000)
-                    if len(data) == 0:
-                        break
+            # Save resampled audio
+            write("test.wav", target_fs, audio_resampled)
 
-                    if rec.AcceptWaveform(data):
-                        print(rec.Result())
-                        result_json = rec.Result()
-                        result = json.loads(result_json)
-                        text = result["text"]
-                        recognized_text = " "
-                        if text != "":
-                            recognized_text += " " + text
-                        final_result = json.loads(rec.FinalResult())
-                        final_text = final_result.get("text", "")
-                        if final_text != "":
-                            recognized_text += " " + final_text
+            # -------------------
+            # LOAD AUDIO FOR VOSK
+            # -------------------
+            wf = wave.open("test.wav", "rb")
+            rec = KaldiRecognizer(model, wf.getframerate())
 
-                        recognized_text = recognized_text.lower().strip()
-                        print("heard ", recognized_text)
-                        if("bathroom" in recognized_text):
-                            LOCATION = "bathroom"
-                        elif("lab" in recognized_text):
-                            LOCATION = "lab"
-                        else:
-                            LOCATION = "example"
-            #figure out how to do speech recognition
+            # -------------------
+            # PROCESS AUDIO
+            # -------------------
+            recognized_text = ""
+
+            while True:
+                data = wf.readframes(4000)
+                if len(data) == 0:
+                    break
+
+                # Debug: show partial recognition
+                partial = json.loads(rec.PartialResult())
+                if partial.get("partial"):
+                    print("partial:", partial["partial"])
+
+                if rec.AcceptWaveform(data):
+                    result = json.loads(rec.Result())
+                    text = result.get("text", "")
+                    if text:
+                        recognized_text += " " + text
+
+            # Always grab final result
+            final_result = json.loads(rec.FinalResult())
+            final_text = final_result.get("text", "")
+            if final_text:
+                recognized_text += " " + final_text
+
+            recognized_text = recognized_text.lower().strip()
+
+            print("Heard:", recognized_text)
+
+            # -------------------
+            # COMMAND LOGIC
+            # -------------------
+            if "bathroom" in recognized_text:
+                LOCATION = "bathroom"
+            elif "lab" in recognized_text:
+                LOCATION = "lab"
+            else:
+                LOCATION = "example"
+
+            print("LOCATION:", LOCATION)
             #robot says "follow me"
             STATE = "TURNING_AROUND"
         elif(STATE == "TURNING_AROUND"):
