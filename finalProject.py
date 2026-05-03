@@ -102,11 +102,11 @@ def goUntilT():
 def alignToHall():
     # Wall-following target
     TARGET_DISTANCE = 1200  # mm from the right wall
-    TOLERANCE = 100  # mm deadband around target
+    TOLERANCE = 180  # mm deadband around target
 
     # LIDAR thresholds
     FRONT_THRESHOLD = 500  # mm; obstacle directly ahead
-    LOST_WALL_DISTANCE = 1600  # mm; right wall considered lost
+    LOST_WALL_DISTANCE = 1700  # mm; right wall considered lost
 
     # Motor calibration
     # These are your known-good straight-driving values.
@@ -115,12 +115,12 @@ def alignToHall():
     RIGHT_MOTOR_TRIM = 50  # right motor needs about +50 to match left motor
 
     # Smooth steering tuning
-    KP = 0.4  # proportional steering gain
-    MAX_STEER = 450  # maximum normal wall-follow correction
+    KP = 0.25  # proportional steering gain
+    MAX_STEER = 300  # maximum normal wall-follow correction
     LOST_WALL_STEER = 350  # positive = smoothly search/turn right
     OBSTACLE_STEER = -500  # negative = turn left away from obstacle
-    STEER_ALPHA = 0.05  # lower = smoother/slower, higher = more reactive
-    MOTOR_RAMP = 35  # maximum motor command change per loop
+    STEER_ALPHA = 0.025  # lower = smoother/slower, higher = more reactive
+    MOTOR_RAMP = 25  # maximum motor command change per loop
     LOOP_DELAY = 0.03  # seconds
 
     # Motor command safety limits based on your previous working values
@@ -235,7 +235,7 @@ def stop():
     motor.rightWheel(6000)
 
 def main():
-    STATE = "TURNING_AROUND"
+    STATE = "WAITING"
     LOCATION = None
     while True:
         print("STATE:", STATE)
@@ -249,12 +249,12 @@ def main():
             tts("Hello, how can I help you?")
             STATE = "LISTENING"
         elif(STATE == "LISTENING"):
-
-            fs = 16000  # Vosk works best at 16kHz
+            
+            fs = 48000  # Vosk works best at 16kHz
             seconds = 5
             model = Model("model")
             LOCATION = "example"
-            if (LOCATION == "example"):
+            while (LOCATION == "example"):
                 print("Recording...")
                 audio = sd.rec(int(seconds * fs), samplerate=fs, channels=1, dtype='int16')
                 sd.wait()
@@ -275,9 +275,23 @@ def main():
                         break
 
                     if rec.AcceptWaveform(data):
-                        if("bathroom" in rec.Result()["text"]):
+                        print(rec.Result())
+                        result_json = rec.Result()
+                        result = json.loads(result_json)
+                        text = result["text"]
+                        recognized_text = " "
+                        if text != "":
+                            recognized_text += " " + text
+                        final_result = json.loads(rec.FinalResult())
+                        final_text = final_result.get("text", "")
+                        if final_text != "":
+                            recognized_text += " " + final_text
+
+                        recognized_text = recognized_text.lower().strip()
+                        print("heard ", recognized_text)
+                        if("bathroom" in recognized_text):
                             LOCATION = "bathroom"
-                        elif("lab" in rec.Result()["text"]):
+                        elif("lab" in recognized_text):
                             LOCATION = "lab"
                         else:
                             LOCATION = "example"
@@ -318,8 +332,8 @@ def main():
         elif(STATE == "FINAL_MOVEMENT"):
             #move forward for 5 second
             STATE = "STOPPED"
-            motor.rightWheel(6500)
-            motor.leftWheel(5500)
+            motor.rightWheel(6700)
+            motor.leftWheel(5300)
             time.sleep(5)
             motor.rightWheel(6000)
             motor.leftWheel(6000)
