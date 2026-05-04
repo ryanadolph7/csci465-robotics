@@ -267,88 +267,89 @@ def main():
             STATE = "LISTENING"
         elif(STATE == "LISTENING"):
 
-            # -------------------
-            # SETTINGS
-            # -------------------
-            fs = 48000  # your mic's native rate
-            target_fs = 16000  # Vosk-required rate
+            # Keep listening until the robot understands a valid destination.
+            # Valid keywords are: "bathroom" or "lab".
+            fs = 48000          # your mic's native rate
+            target_fs = 16000   # Vosk-required rate
             seconds = 3
 
             model = Model("model")
-            LOCATION = "example"
+            LOCATION = None
 
-            # -------------------
-            # RECORD AUDIO
-            # -------------------
-            print("Recording...")
-            audio = sd.rec(int(seconds * fs), samplerate=fs, channels=1, dtype='int16')
-            sd.wait()
-            print("Done!")
+            while LOCATION is None:
+                # -------------------
+                # RECORD AUDIO
+                # -------------------
+                print("Recording...")
+                audio = sd.rec(int(seconds * fs), samplerate=fs, channels=1, dtype='int16')
+                sd.wait()
+                print("Done!")
 
-            # Convert to 1D array
-            audio = audio.flatten()
+                # Convert to 1D array
+                audio = audio.flatten()
 
-            # -------------------
-            # RESAMPLE TO 16kHz
-            # -------------------
-            num_samples = int(len(audio) * target_fs / fs)
-            audio_resampled = resample(audio, num_samples).astype(np.int16)
+                # -------------------
+                # RESAMPLE TO 16kHz
+                # -------------------
+                num_samples = int(len(audio) * target_fs / fs)
+                audio_resampled = resample(audio, num_samples).astype(np.int16)
 
-            # Save resampled audio
-            write("test.wav", target_fs, audio_resampled)
+                # Save resampled audio
+                write("test.wav", target_fs, audio_resampled)
 
-            # -------------------
-            # LOAD AUDIO FOR VOSK
-            # -------------------
-            wf = wave.open("test.wav", "rb")
-            rec = KaldiRecognizer(model, wf.getframerate())
+                # -------------------
+                # LOAD AUDIO FOR VOSK
+                # -------------------
+                wf = wave.open("test.wav", "rb")
+                rec = KaldiRecognizer(model, wf.getframerate())
 
-            # -------------------
-            # PROCESS AUDIO
-            # -------------------
-            recognized_text = ""
+                # -------------------
+                # PROCESS AUDIO
+                # -------------------
+                recognized_text = ""
 
-            while True:
-                data = wf.readframes(4000)
-                if len(data) == 0:
-                    break
+                while True:
+                    data = wf.readframes(4000)
+                    if len(data) == 0:
+                        break
 
-                # Debug: show partial recognition
-                partial = json.loads(rec.PartialResult())
-                if partial.get("partial"):
-                    print("partial:", partial["partial"])
+                    # Debug: show partial recognition
+                    partial = json.loads(rec.PartialResult())
+                    if partial.get("partial"):
+                        print("partial:", partial["partial"])
 
-                if rec.AcceptWaveform(data):
-                    result = json.loads(rec.Result())
-                    text = result.get("text", "")
-                    if text:
-                        recognized_text += " " + text
+                    if rec.AcceptWaveform(data):
+                        result = json.loads(rec.Result())
+                        text = result.get("text", "")
+                        if text:
+                            recognized_text += " " + text
 
-            # Always grab final result
-            final_result = json.loads(rec.FinalResult())
-            final_text = final_result.get("text", "")
-            if final_text:
-                recognized_text += " " + final_text
+                # Always grab final result
+                final_result = json.loads(rec.FinalResult())
+                final_text = final_result.get("text", "")
+                if final_text:
+                    recognized_text += " " + final_text
 
-            recognized_text = recognized_text.lower().strip()
+                wf.close()
 
-            print("Heard:", recognized_text)
+                recognized_text = recognized_text.lower().strip()
+                print("Heard:", recognized_text)
 
-            # -------------------
-            # COMMAND LOGIC
-            # -------------------
-            if "bathroom" in recognized_text:
-                LOCATION = "Bathroom"
-            elif "lab" in recognized_text:
-                LOCATION = "Lab"
-            else:
-                LOCATION = "example"
+                # -------------------
+                # COMMAND LOGIC
+                # -------------------
+                if "bathroom" in recognized_text:
+                    LOCATION = "Bathroom"
+                elif "lab" in recognized_text:
+                    LOCATION = "Lab"
+                else:
+                    print("Did not understand a valid destination. Listening again...")
+                    tts("Sorry, I did not understand. Please say bathroom or lab.")
+                    time.sleep(0.5)
 
             print("LOCATION:", LOCATION)
-            #robot says "follow me"
             STATE = "TURNING_AROUND"
         elif(STATE == "TURNING_AROUND"):
-            LOCATION = "bathroom"
             tts("Follow Me!")
             #robot 180's
             motor.rightWheel(7500)
@@ -369,12 +370,12 @@ def main():
             # Turn left or right
             if(LOCATION == "Bathroom"):
                 #turn left
-                motor.rightWheel(7000)
+                motor.rightWheel(7200)
                 time.sleep(0.5)
                 motor.rightWheel(6000)
             elif(LOCATION == "Lab"):
                 # turn right 
-                motor.leftWheel(4700)
+                motor.leftWheel(5000)
                 time.sleep(0.5)
                 motor.leftWheel(6000)
             #else:
